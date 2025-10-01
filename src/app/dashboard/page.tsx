@@ -4,9 +4,9 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/guards/AuthGuard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { User, Mail, Calendar, Shield } from 'lucide-react'
+import { EditProfileDialog } from '@/components/auth/EditProfileDialog'
 
 interface UserData {
   id: string
@@ -22,21 +22,21 @@ export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch('/api/user')
-        if (response.ok) {
-          const data = await response.json()
-          setUserData(data.user)
-        }
-      } catch (error) {
-        console.error('Failed to fetch user data:', error)
-      } finally {
-        setLoading(false)
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('/api/user')
+      if (response.ok) {
+        const data = await response.json()
+        setUserData(data.user)
       }
+    } catch (error) {
+      console.error('Failed to fetch user data:', error)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     if (session) {
       fetchUserData()
     }
@@ -134,7 +134,12 @@ export default function DashboardPage() {
               </div>
             )}
             <div className="pt-4">
-              <Button variant="outline">Edit Profile</Button>
+              {userData && (
+                <EditProfileDialog 
+                  currentName={userData.name} 
+                  onUpdate={fetchUserData}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
