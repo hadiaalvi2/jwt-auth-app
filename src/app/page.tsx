@@ -21,7 +21,7 @@ export default async function HomePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">
         <Card>
           <CardHeader>
-            <CardTitle>🔐 Secure Authentication</CardTitle>
+            <CardTitle>Secure Authentication</CardTitle>
             <CardDescription>
               OAuth integration with Google and GitHub providers
             </CardDescription>
@@ -35,7 +35,7 @@ export default async function HomePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>🎫 JWT Tokens</CardTitle>
+            <CardTitle> JWT Tokens</CardTitle>
             <CardDescription>
               Access and refresh token management
             </CardDescription>
@@ -49,7 +49,7 @@ export default async function HomePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>🛡️ Role-Based Access</CardTitle>
+            <CardTitle> Role-Based Access</CardTitle>
             <CardDescription>
               Granular permissions and route protection
             </CardDescription>
