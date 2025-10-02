@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import {
   Dialog,
   DialogContent,
@@ -15,19 +15,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { useRouter } from "next/navigation"
 
 interface EditProfileDialogProps {
   currentName: string
-  onUpdate?: () => void
 }
 
-export function EditProfileDialog({ currentName, onUpdate }: EditProfileDialogProps) {
+export function EditProfileDialog({ currentName }: EditProfileDialogProps) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(currentName)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const { update } = useSession()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,26 +42,18 @@ export function EditProfileDialog({ currentName, onUpdate }: EditProfileDialogPr
       })
 
       if (!response.ok) {
-        throw new Error("Failed to update profile")
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to update profile")
       }
-
-      const data = await response.json()
-      
-      // Update the session with new name
-      await update({
-        name: data.user.name,
-      })
 
       setOpen(false)
       
       // Refresh the page to show updated data
-      if (onUpdate) {
-        onUpdate()
-      }
       router.refresh()
     } catch (err) {
-      setError("Failed to update profile. Please try again.")
-      console.error(err)
+      console.error("Update profile error:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to update profile. Please try again."
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -95,10 +84,14 @@ export function EditProfileDialog({ currentName, onUpdate }: EditProfileDialogPr
                 className="col-span-3"
                 placeholder="Enter your name"
                 disabled={loading}
+                required
+                minLength={1}
               />
             </div>
             {error && (
-              <p className="text-sm text-red-500 text-center">{error}</p>
+              <div className="col-span-4 p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded">
+                {error}
+              </div>
             )}
           </div>
           <DialogFooter>
@@ -110,7 +103,7 @@ export function EditProfileDialog({ currentName, onUpdate }: EditProfileDialogPr
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || !name.trim()}>
               {loading ? (
                 <>
                   <Spinner size="sm" className="mr-2" />

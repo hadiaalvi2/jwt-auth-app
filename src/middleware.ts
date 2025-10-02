@@ -1,49 +1,45 @@
-import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
-import { canAccessRoute, Role } from "./lib/rbac"
+import type { NextRequest } from "next/server"
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token
-    const pathname = req.nextUrl.pathname
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  
+  // Get the token from the cookie
+  const token = request.cookies.get('next-auth.session-token') || 
+                request.cookies.get('__Secure-next-auth.session-token')
 
-    // Public routes
-    if (pathname === "/" || pathname === "/login") {
-      return NextResponse.next()
-    }
+  // Public routes that don't require authentication
+  const publicRoutes = ['/', '/login', '/unauthorized']
+  const isPublicRoute = publicRoutes.some(route => pathname === route)
 
-    // Check if user is authenticated
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", req.url))
-    }
-
-    // Role-based access control
-    const userRole = token.role as Role
-    if (!canAccessRoute(userRole, pathname)) {
-      return NextResponse.redirect(new URL("/unauthorized", req.url))
-    }
-
+  // Allow public routes
+  if (isPublicRoute) {
     return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Allow access to public routes
-        if (req.nextUrl.pathname === "/" || req.nextUrl.pathname === "/login") {
-          return true
-        }
-        // Require token for protected routes
-        return !!token
-      },
-    },
   }
-)
+
+  // Check if accessing protected routes without token
+  const protectedRoutes = ['/dashboard', '/admin', '/api/user', '/api/admin']
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+
+  if (isProtectedRoute && !token) {
+    // Redirect to login if no token
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/admin/:path*",
-    "/api/admin/:path*",
-    "/api/user/:path*"
-  ]
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (public folder)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth).*)',
+  ],
 }
